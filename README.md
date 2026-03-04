@@ -22,8 +22,8 @@ Ez egy professzionális, valós idejű monitorozó rendszer Solarplanet / ZeverS
    NEXT_PUBLIC_LANGUAGE=hu
 
    # Inverter adatai
-   INVERTER_IP=192.168.1.15
-   INVERTER_SERIAL=SZ00106022230536
+   INVERTER_IP=192.168.1.xxx
+   INVERTER_SERIAL=<YOUR_SERIAL_NUMBER>
    INVERTER_PORT=8484
    INVERTER_NAME=Otthoni Inverter
 

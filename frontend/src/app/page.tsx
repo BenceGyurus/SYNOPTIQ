@@ -354,7 +354,7 @@ export default function Home() {
       <footer className="flex flex-col md:flex-row justify-between items-center glass-advanced px-8 py-4 opacity-40 hover:opacity-100 transition-opacity gap-4">
         <div className="flex items-center gap-3 text-slate-500">
           <Info className="w-4 h-4 text-blue-400" />
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.node_serial}: SZ00106022230536</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.node_serial}: {latest?.serial_number || '---'}</span>
         </div>
         <div className="flex items-center gap-3 text-slate-500">
           <Clock className="w-4 h-4 text-yellow-500" />
@@ -362,7 +362,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3 text-slate-500">
           <Settings className="w-4 h-4 text-purple-500" />
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.infrastructure}: 192.168.1.15:8484</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.infrastructure}: {latest?.ip_address || '---'}:8484</span>
         </div>
       </footer>
     </main>
