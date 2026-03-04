@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: solaris_db
+    environment:
+      - POSTGRES_USER=solaris
+      - POSTGRES_PASSWORD=solaris_pass
+      - POSTGRES_DB=solaris
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: solaris_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - INVERTER_IP=${INVERTER_IP}
+      - INVERTER_SERIAL=${INVERTER_SERIAL}
+      - INVERTER_PORT=${INVERTER_PORT}
+      - INVERTER_NAME=${INVERTER_NAME}
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_LANGUAGE=${NEXT_PUBLIC_LANGUAGE}
+    container_name: solaris_frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
