@@ -5,29 +5,37 @@ services:
     image: timescale/timescaledb:latest-pg16
     container_name: solaris_db
     environment:
-      - POSTGRES_USER=solaris
-      - POSTGRES_PASSWORD=solaris_pass
-      - POSTGRES_DB=solaris
+      - POSTGRES_USER=${POSTGRES_USER:-solaris}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-solaris_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-solaris}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-solaris} -d ${POSTGRES_DB:-solaris}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
     container_name: solaris_backend
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    env_file:
-      - .env
+      - backend_data:/app/data
     environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://solaris:solaris_pass@db:5432/solaris}
+      - SECRET_KEY=${SECRET_KEY}
       - INVERTER_IP=${INVERTER_IP}
       - INVERTER_SERIAL=${INVERTER_SERIAL}
       - INVERTER_PORT=${INVERTER_PORT}
       - INVERTER_NAME=${INVERTER_NAME}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -35,15 +43,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_LANGUAGE=${NEXT_PUBLIC_LANGUAGE}
+        - NEXT_PUBLIC_LANGUAGE=${NEXT_PUBLIC_LANGUAGE:-hu}
     container_name: solaris_frontend
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  backend_data:
