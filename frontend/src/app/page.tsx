@@ -145,8 +145,8 @@ export default function Home() {
     } catch (e) { console.error(e); }
   };
 
-  const string1Power = useMemo(() => (latest?.vpv1 || 0) * (latest?.ipv1 || 0), [latest]);
-  const string2Power = useMemo(() => (latest?.vpv2 || 0) * (latest?.ipv2 || 0), [latest]);
+  const string1Power = useMemo(() => ((latest?.vpv1 || 0) / 10) * ((latest?.ipv1 || 0) / 10), [latest]);
+  const string2Power = useMemo(() => ((latest?.vpv2 || 0) / 10) * ((latest?.ipv2 || 0) / 10), [latest]);
   const dailyDiff = useMemo(() => stats ? ((stats.daily - stats.yesterday) / (stats.yesterday || 1)) * 100 : 0, [stats]);
   const getFlowSpeed = (pwr: number) => (!isOnline || pwr <= 5) ? '0s' : `${Math.max(0.2, 2 - (pwr / 2000))}s`;
 
@@ -220,8 +220,8 @@ export default function Home() {
                 </g>
 
                 {[
-                  { id: 'ALPHA', y: 150, pwr: string1Power, v: latest?.vpv1, i: latest?.ipv1, color: '#00f3ff' },
-                  { id: 'BETA', y: 320, pwr: string2Power, v: latest?.vpv2, i: latest?.ipv2, color: '#ff00ea' }
+                  { id: 'ALPHA', y: 150, pwr: string1Power, v: (latest?.vpv1 || 0) / 10, i: (latest?.ipv1 || 0) / 10, color: '#00f3ff' },
+                  { id: 'BETA', y: 320, pwr: string2Power, v: (latest?.vpv2 || 0) / 10, i: (latest?.ipv2 || 0) / 10, color: '#ff00ea' }
                 ].map(s => (
                   <g key={s.id} className="float-animation" style={{ animationDelay: s.id === 'BETA' ? '1s' : '0s' }}>
                     <rect x="80" y={s.y} width="240" height="120" rx="20" fill="rgba(15,23,42,0.8)" stroke={s.color} strokeWidth="1" strokeOpacity="0.3" />
