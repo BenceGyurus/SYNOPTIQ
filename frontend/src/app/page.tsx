@@ -7,6 +7,14 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Sun, Moon, Home as HomeIcon, Zap, Battery, Leaf, ShieldCheck, Activity, Cpu, Info, BarChart3, Clock, Settings, Terminal, AlertTriangle, CheckCircle2, TrendingUp, LogOut } from 'lucide-react';
 import { getTranslation } from '@/lib/translations';
 
+interface Inverter {
+  id: number;
+  name: string;
+  serial_number: string;
+  ip_address: string;
+  port: number;
+}
+
 interface Metric {
   id: number;
   timestamp: string;
@@ -31,6 +39,7 @@ interface LogEntry {
 
 export default function Home() {
   const t = useMemo(() => getTranslation(process.env.NEXT_PUBLIC_LANGUAGE), []);
+  const [inverter, setInverter] = useState<Inverter | null>(null);
   const [latest, setLatest] = useState<Metric | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [chartData, setChartData] = useState<Metric[]>([]);
@@ -87,7 +96,9 @@ export default function Home() {
       try {
         const inverters = await api.get('/inverters');
         if (inverters.length > 0) {
-          const id = inverters[0].id;
+          const inv = inverters[0];
+          setInverter(inv);
+          const id = inv.id;
           const [l, s] = await Promise.all([
             api.get(`/metrics/latest?inverter_id=${id}`),
             api.get(`/metrics/stats?inverter_id=${id}`)
@@ -354,7 +365,7 @@ export default function Home() {
       <footer className="flex flex-col md:flex-row justify-between items-center glass-advanced px-8 py-4 opacity-40 hover:opacity-100 transition-opacity gap-4">
         <div className="flex items-center gap-3 text-slate-500">
           <Info className="w-4 h-4 text-blue-400" />
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.node_serial}: {latest?.serial_number || '---'}</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.node_serial}: {inverter?.serial_number || '---'}</span>
         </div>
         <div className="flex items-center gap-3 text-slate-500">
           <Clock className="w-4 h-4 text-yellow-500" />
@@ -362,7 +373,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-3 text-slate-500">
           <Settings className="w-4 h-4 text-purple-500" />
-          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.infrastructure}: {latest?.ip_address || '---'}:8484</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">{t.infrastructure}: {inverter?.ip_address || '---'}:{inverter?.port || '8484'}</span>
         </div>
       </footer>
     </main>
