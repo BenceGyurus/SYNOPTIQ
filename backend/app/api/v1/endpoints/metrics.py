@@ -88,11 +88,10 @@ async def get_stats(
     savings_huf = daily * 36.0
 
     # Efficiency calculation (DC to AC)
-    # Corrected latest might have V and A already divided by 10/100 in the future, 
-    # but currently DB has raw or partially processed.
-    # Based on current collector: vpv1 is V*10, ipv1 is A*10.
-    # dc_power = (V*10/10 * A*10/10) = V * A.
-    dc_power = (latest.vpv1 * latest.ipv1 + latest.vpv2 * latest.ipv2) if latest else 0
+    # V and A are stored as integers (V*10 and A*10), so we divide both by 10
+    v1, i1 = (latest.vpv1 / 10), (latest.ipv1 / 10)
+    v2, i2 = (latest.vpv2 / 10), (latest.ipv2 / 10)
+    dc_power = (v1 * i1 + v2 * i2) if latest else 0
     efficiency = (latest.pac / dc_power) * 100 if latest and dc_power > 10 else 0
 
     res = {
