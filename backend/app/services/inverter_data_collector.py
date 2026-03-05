@@ -55,8 +55,8 @@ def parse_inverter_data(data: Dict[str, Any]) -> schemas.MetricCreate:
         "pac": get_val("pac", divisor=1),     # 2131 -> 2131 W
         "sac": get_val("sac", divisor=1),
         "qac": get_val("qac", divisor=1),
-        "eto": get_val("eto", divisor=10),    # 151695 -> 15169.5 kWh
-        "etd": get_val("etd", divisor=10),    # 59 -> 5.9 kWh
+        "eto": get_val("eto", divisor=1000),  # 151695 Wh -> 151.7 kWh
+        "etd": get_val("etd", divisor=1000),  # 59 Wh -> 0.059 kWh
         "hto": get_val("hto", divisor=1),
         "pf":  get_val("pf", divisor=1000),
         "wan": int(data.get("wan", 0)),

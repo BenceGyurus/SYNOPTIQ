@@ -25,7 +25,7 @@ interface Metric {
 }
 
 interface Stats {
-  daily: number; monthly: number; yearly: number; yesterday: number;
+  daily: number; monthly: number; yearly: number; yesterday: number; total: number;
   co2_saved: number; trees_equivalent: number; efficiency: number;
   savings_huf: number;
 }
@@ -196,11 +196,19 @@ export default function Home() {
           <div className="w-px h-8 bg-white/10 hidden sm:block" />
           <div className="text-center">
             <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{t.savings}</div>
-            <div className="text-xl font-black text-green-500">{stats?.savings_huf.toLocaleString()}<span className="text-xs ml-1">Ft</span></div>
+            <div className="text-xl font-black text-green-500">{stats?.total.toFixed(1)}<span className="text-xs ml-1">kWh</span></div>
             <div className="text-[9px] font-bold text-green-500/50">{t.total}</div>
           </div>
         </div>
       </header>
+
+      {/* Stats row for daily energy */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="glass-advanced flex-1 p-4 flex justify-between items-center">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">{t.daily_energy}</span>
+          <span className="text-xl font-black text-yellow-500">{stats?.daily.toFixed(2)} kWh</span>
+        </div>
+      </div>
 
       {/* MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

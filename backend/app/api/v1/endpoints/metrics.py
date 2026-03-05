@@ -96,6 +96,7 @@ async def get_stats(
         "monthly": monthly,
         "yearly": yearly,
         "yesterday": yesterday,
+        "total": latest.eto if latest else 0.0,
         "co2_saved": co2_saved,
         "trees_equivalent": trees_equivalent,
         "savings_huf": savings_huf,
