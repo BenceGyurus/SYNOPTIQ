@@ -15,5 +15,5 @@ RUN touch /app/data/solaris.db
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Run alembic migrations and start the application
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
+# Run the application
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

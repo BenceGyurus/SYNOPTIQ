@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: timescale/timescaledb:latest-pg16
@@ -28,7 +26,7 @@ services:
       - backend_data:/app/data
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://solaris:solaris_pass@db:5432/solaris}
-      - SECRET_KEY=${SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_me}
       - INVERTER_IP=${INVERTER_IP}
       - INVERTER_SERIAL=${INVERTER_SERIAL}
       - INVERTER_PORT=${INVERTER_PORT}
