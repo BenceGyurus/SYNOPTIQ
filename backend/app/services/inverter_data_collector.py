@@ -50,27 +50,27 @@ def parse_inverter_data(data: Dict[str, Any]) -> schemas.MetricCreate:
     metric_data = {
         "timestamp": parsed_timestamp,
         "flg": int(data.get("flg", 0)),
-        "tmp": get_val("tmp", divisor=10),    # 323 -> 32.3 C
-        "fac": get_val("fac", divisor=100),   # 4997 -> 49.97 Hz
-        "pac": get_val("pac", divisor=1),     # 0 -> 0 W
+        "tmp": get_val("tmp", divisor=10),    # 394 -> 39.4 C
+        "fac": get_val("fac", divisor=100),   # 4998 -> 49.98 Hz
+        "pac": get_val("pac", divisor=1),     # 2131 -> 2131 W
         "sac": get_val("sac", divisor=1),
         "qac": get_val("qac", divisor=1),
-        "eto": get_val("eto", divisor=1),     # 151636 -> 151636 Wh
-        "etd": get_val("etd", divisor=1),     # 124 -> 124 Wh
+        "eto": get_val("eto", divisor=10),    # 151695 -> 15169.5 kWh
+        "etd": get_val("etd", divisor=10),    # 59 -> 5.9 kWh
         "hto": get_val("hto", divisor=1),
         "pf":  get_val("pf", divisor=1000),
         "wan": int(data.get("wan", 0)),
         "err": int(data.get("err", 0)),
-        "vac1": get_val("vac", 0, divisor=10), # 2247 -> 224.7 V
+        "vac1": get_val("vac", 0, divisor=10), # 2471 -> 247.1 V
         "vac2": get_val("vac", 1, divisor=10),
         "vac3": get_val("vac", 2, divisor=10),
-        "iac1": get_val("iac", 0, divisor=10), # 8 -> 0.8 A
+        "iac1": get_val("iac", 0, divisor=10), # 29 -> 2.9 A
         "iac2": get_val("iac", 1, divisor=10),
         "iac3": get_val("iac", 2, divisor=10),
-        "vpv1": get_val("vpv", 0, divisor=10), # 0 -> 0 V
-        "vpv2": get_val("vpv", 1, divisor=10), # 1844 -> 184.4 V
-        "ipv1": get_val("ipv", 0, divisor=10),
-        "ipv2": get_val("ipv", 1, divisor=10),
+        "vpv1": get_val("vpv", 0, divisor=10), # 2114 -> 211.4 V
+        "vpv2": get_val("vpv", 1, divisor=10), # 0 -> 0.0 V
+        "ipv1": get_val("ipv", 0, divisor=100), # 1020 -> 10.2 A
+        "ipv2": get_val("ipv", 1, divisor=100), # 0 -> 0.0 A
     }
     return schemas.MetricCreate(**metric_data)
 

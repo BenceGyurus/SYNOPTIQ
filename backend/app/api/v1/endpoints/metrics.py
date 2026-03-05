@@ -88,8 +88,7 @@ async def get_stats(
     savings_huf = daily * 36.0
 
     # Efficiency calculation (DC to AC)
-    # The product (V*I) needs to be divided by 10 to get real Watts
-    dc_power = (latest.vpv1 * latest.ipv1 + latest.vpv2 * latest.ipv2) / 10 if latest else 0
+    dc_power = (latest.vpv1 * latest.ipv1 + latest.vpv2 * latest.ipv2) if latest else 0
     efficiency = (latest.pac / dc_power) * 100 if latest and dc_power > 10 else 0
 
     res = {
