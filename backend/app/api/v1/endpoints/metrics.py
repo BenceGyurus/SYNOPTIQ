@@ -81,11 +81,11 @@ async def get_stats(
     # Comparative
     yesterday = await crud.get_yesterday_stats(db, inverter_id)
 
-    # Environmental (Approximate constants)
-    total_kwh = (latest.eto / 1000) if latest else 0.0
-    co2_saved = total_kwh * 0.4
+    # Environmental (Approximate constants based on daily production)
+    # daily is already calculated above as latest.etd
+    co2_saved = daily * 0.4
     trees_equivalent = co2_saved / 20.0
-    savings_huf = total_kwh * 36.0
+    savings_huf = daily * 36.0
 
     # Efficiency calculation (DC to AC)
     # Corrected latest might have V and A already divided by 10/100 in the future, 
