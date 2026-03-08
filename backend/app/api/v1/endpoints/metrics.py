@@ -60,7 +60,7 @@ async def get_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """
-    Get advanced production stats using UTC-aware datetimes.
+    Get advanced production stats.
     """
     now = datetime.now(timezone.utc)
     import logging
@@ -69,8 +69,13 @@ async def get_stats(
     # Basic Stats
     latest = await crud.get_latest_metric(db, inverter_id=inverter_id)
     
-    # We compare dates in UTC
-    daily = latest.etd if latest and latest.timestamp.date() == now.date() else 0.0
+    # Use max(etd) for today instead of relying on exact date match on latest
+    # This is more robust against timezone mismatches
+    daily = await crud.get_daily_production(db, inverter_id, now)
+    
+    # If daily is 0 but we have a very recent metric, trust latest.etd
+    if daily == 0 and latest and (now - latest.timestamp).total_seconds() < 3600:
+        daily = latest.etd
 
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     monthly = await crud.get_energy_production(db, inverter_id, month_start, now)
@@ -82,7 +87,6 @@ async def get_stats(
     yesterday = await crud.get_yesterday_stats(db, inverter_id)
 
     # Environmental (Approximate constants based on daily production)
-    # daily is already calculated above as latest.etd
     co2_saved = daily * 0.4
     trees_equivalent = co2_saved / 20.0
     savings_huf = daily * 36.0

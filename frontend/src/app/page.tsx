@@ -147,7 +147,10 @@ export default function Home() {
 
   const string1Power = useMemo(() => (latest?.vpv1 || 0) * (latest?.ipv1 || 0), [latest]);
   const string2Power = useMemo(() => (latest?.vpv2 || 0) * (latest?.ipv2 || 0), [latest]);
-  const dailyDiff = useMemo(() => stats ? ((stats.daily - stats.yesterday) / (stats.yesterday || 1)) * 100 : 0, [stats]);
+  const dailyDiff = useMemo(() => {
+    if (!stats || stats.yesterday === 0) return stats?.daily ? 100 : 0;
+    return ((stats.daily - stats.yesterday) / stats.yesterday) * 100;
+  }, [stats]);
   const getFlowSpeed = (pwr: number) => (!isOnline || pwr <= 5) ? '0s' : `${Math.max(0.2, 2 - (pwr / 2000))}s`;
 
   if (dataLoading) return (
@@ -258,7 +261,7 @@ export default function Home() {
 
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { label: t.daily_yield, val: (stats?.daily || 0) / 1000, unit: 'kWh', icon: Zap, color: 'text-yellow-500', trend: dailyDiff },
+              { label: t.daily_yield, val: stats?.daily || 0, unit: 'kWh', icon: Zap, color: 'text-yellow-500', trend: dailyDiff },
               { label: t.savings, val: stats?.savings_huf || 0, unit: 'Ft', icon: TrendingUp, color: 'text-green-500' },
               { label: t.co2_saved, val: stats?.co2_saved || 0, unit: 'kg', icon: Leaf, color: 'text-green-500' },
               { label: t.efficiency, val: stats?.efficiency || 0, unit: '%', icon: ShieldCheck, color: 'text-cyan-500' },

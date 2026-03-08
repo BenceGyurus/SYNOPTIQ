@@ -204,9 +204,10 @@ async def delete_report(db: AsyncSession, report_id: int) -> Optional[Report]:
     return report
 
 async def get_energy_production(db: AsyncSession, inverter_id: int, start_time: datetime, end_time: datetime) -> float:
-    # Query for the latest and earliest 'eto' (Total Energy) in the period
-    # To get production, we subtract the starting eto from the ending eto.
-    
+    """
+    Get energy production between two timestamps.
+    For periods longer than a day, we use the difference in total energy (eto).
+    """
     # Ending eto (max timestamp)
     end_query = select(Metric.eto).filter(
         Metric.inverter_id == inverter_id,
@@ -231,9 +232,26 @@ async def get_energy_production(db: AsyncSession, inverter_id: int, start_time: 
         return max(0, end_eto - start_eto)
     return 0.0
 
+async def get_daily_production(db: AsyncSession, inverter_id: int, target_date: datetime) -> float:
+    """
+    Get the maximum 'etd' (Energy Today) value for a specific day.
+    This is more reliable for single-day production than subtracting 'eto'.
+    """
+    start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    query = select(func.max(Metric.etd)).filter(
+        Metric.inverter_id == inverter_id,
+        Metric.timestamp >= start_of_day,
+        Metric.timestamp <= end_of_day
+    )
+    
+    result = await db.execute(query)
+    max_etd = result.scalar()
+    return max_etd if max_etd is not None else 0.0
+
 async def get_yesterday_stats(db: AsyncSession, inverter_id: int) -> float:
     from datetime import timedelta
     now = datetime.now(timezone.utc)
-    yesterday_start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    yesterday_end = yesterday_start.replace(hour=23, minute=59, second=59)
-    return await get_energy_production(db, inverter_id, yesterday_start, yesterday_end)
+    yesterday = now - timedelta(days=1)
+    return await get_daily_production(db, inverter_id, yesterday)
