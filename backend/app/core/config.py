@@ -6,7 +6,8 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "SOLARIS NEXUS"
     API_V1_STR: str = "/api/v1"
 
-    SECRET_KEY: str
+    SECRET_KEY: str = ""
+    INTERNAL_API_SECRET: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # Inverter polling
-    POLLING_INTERVAL_SECONDS: int = 5
+    POLLING_INTERVAL_SECONDS: int = 30
     INVERTER_POLL_TIMEOUT: int = 10
 
     # Inverter Configuration (from ENV)
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     INVERTER_SERIAL: Optional[str] = None
     INVERTER_IP: Optional[str] = None
     INVERTER_PORT: int = 8484
+    INVERTER_TIMEZONE: str = "Europe/Budapest"
 
     # Email settings
     SMTP_TLS: bool = True
@@ -39,5 +41,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
 settings = Settings()

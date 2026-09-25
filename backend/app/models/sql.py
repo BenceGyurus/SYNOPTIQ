@@ -80,10 +80,12 @@ class Metric(Base):
     # PV Voltages (assuming 2 strings, can be less or more)
     vpv1 = Column(Float, nullable=True)
     vpv2 = Column(Float, nullable=True)
+    vpv3 = Column(Float, nullable=True)
 
     # PV Currents (assuming 2 strings, can be less or more)
     ipv1 = Column(Float, nullable=True)
     ipv2 = Column(Float, nullable=True)
+    ipv3 = Column(Float, nullable=True)
 
     inverter = relationship("Inverter", back_populates="metrics")
 

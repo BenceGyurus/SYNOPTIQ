@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud
@@ -28,7 +29,7 @@ async def get_current_user(
         if email is None:
             raise credentials_exception
         token_data = TokenData(email=email)
-    except JWTError:
+    except PyJWTError:
         raise credentials_exception
     user = await crud.get_user_by_email(db, email=token_data.email)
     if user is None:

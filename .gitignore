@@ -235,6 +235,7 @@ __marimo__/
 # misc
 .DS_Store
 *.pem
+backend/data/*.db
 
 # debug
 npm-debug.log*

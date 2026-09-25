@@ -1,6 +1,9 @@
 from typing import List, Annotated, Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from zoneinfo import ZoneInfo
+from app.core.config import settings
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import text
 
 from app import crud
 from app.dependencies import get_db
@@ -13,6 +16,37 @@ router = APIRouter(
     redirect_slashes=False,
 )
 
+@router.get("/timeseries")
+async def read_timeseries(
+    inverter_id: int,
+    start_time: datetime,
+    end_time: datetime,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    bucket_minutes: int = Query(5, ge=1, le=60),
+    metric: str = Query("power"),
+):
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    if end_time.tzinfo is None:
+        end_time = end_time.replace(tzinfo=timezone.utc)
+    if end_time <= start_time or (end_time - start_time).days > 90:
+        raise HTTPException(status_code=422, detail="Invalid time range")
+    column = {"power": "pac", "voltage": "vac1", "frequency": "fac", "temperature": "tmp"}.get(metric)
+    if not column:
+        raise HTTPException(status_code=422, detail="Invalid metric")
+    rows = await db.execute(text(f"""
+        SELECT date_bin(make_interval(mins => :bucket), timestamp,
+                        TIMESTAMPTZ '1970-01-01') AS timestamp,
+               avg({column}) AS value
+        FROM metrics
+        WHERE inverter_id = :inverter_id AND timestamp >= :start_time
+              AND timestamp <= :end_time
+        GROUP BY 1 ORDER BY 1
+    """), {"bucket": bucket_minutes, "inverter_id": inverter_id,
+            "start_time": start_time, "end_time": end_time})
+    return [{"timestamp": row.timestamp, "pac": float(row.value or 0),
+             "value": float(row.value or 0)} for row in rows]
+
 @router.get("", response_model=List[metric_schema.Metric])
 async def read_metrics(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -20,7 +54,7 @@ async def read_metrics(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=2000),
 ):
     """
     Retrieve metrics.
@@ -62,7 +96,7 @@ async def get_stats(
     """
     Get advanced production stats.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(ZoneInfo(settings.INVERTER_TIMEZONE))
     import logging
     logger = logging.getLogger(__name__)
 
@@ -86,13 +120,9 @@ async def get_stats(
     # Comparative
     yesterday = await crud.get_yesterday_stats(db, inverter_id)
 
-    # Environmental (Approximate constants based on daily production)
-    co2_saved = daily * 0.4
-    trees_equivalent = co2_saved / 20.0
-    savings_huf = daily * 36.0
-
     # Efficiency calculation (DC to AC)
-    dc_power = (latest.vpv1 * latest.ipv1 + latest.vpv2 * latest.ipv2) if latest else 0
+    dc_power = sum((getattr(latest, f"vpv{index}") or 0) * (getattr(latest, f"ipv{index}") or 0)
+                   for index in (1, 2, 3)) if latest else 0
     efficiency = (latest.pac / dc_power) * 100 if latest and dc_power > 10 else 0
 
     res = {
@@ -101,9 +131,6 @@ async def get_stats(
         "yearly": yearly,
         "yesterday": yesterday,
         "total": latest.eto if latest else 0.0,
-        "co2_saved": co2_saved,
-        "trees_equivalent": trees_equivalent,
-        "savings_huf": savings_huf,
         "efficiency": efficiency
     }
     logger.info(f"Stats for inverter {inverter_id}: {res}")

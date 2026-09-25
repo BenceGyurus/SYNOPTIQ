@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -216,7 +216,7 @@ async def get_energy_production(db: AsyncSession, inverter_id: int, start_time: 
     ).order_by(Metric.timestamp.desc()).limit(1)
     
     # Starting eto (min timestamp)
-    start_query = select(Metric.eto).filter(
+    start_query = select(Metric.eto, Metric.etd).filter(
         Metric.inverter_id == inverter_id,
         Metric.timestamp >= start_time,
         Metric.timestamp <= end_time
@@ -226,10 +226,12 @@ async def get_energy_production(db: AsyncSession, inverter_id: int, start_time: 
     start_result = await db.execute(start_query)
     
     end_eto = end_result.scalar()
-    start_eto = start_result.scalar()
+    first_reading = start_result.first()
     
-    if end_eto is not None and start_eto is not None:
-        return max(0, end_eto - start_eto)
+    if end_eto is not None and first_reading is not None:
+        # Include production before the first poll of the period, when the
+        # inverter's own daily counter is already non-zero.
+        return max(0, end_eto - first_reading.eto + (first_reading.etd or 0))
     return 0.0
 
 async def get_daily_production(db: AsyncSession, inverter_id: int, target_date: datetime) -> float:
@@ -252,6 +254,8 @@ async def get_daily_production(db: AsyncSession, inverter_id: int, target_date: 
 
 async def get_yesterday_stats(db: AsyncSession, inverter_id: int) -> float:
     from datetime import timedelta
-    now = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    from app.core.config import settings
+    now = datetime.now(ZoneInfo(settings.INVERTER_TIMEZONE))
     yesterday = now - timedelta(days=1)
     return await get_daily_production(db, inverter_id, yesterday)

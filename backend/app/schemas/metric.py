@@ -23,8 +23,10 @@ class MetricBase(BaseModel):
     iac3: Optional[float] = None
     vpv1: Optional[float] = None
     vpv2: Optional[float] = None
+    vpv3: Optional[float] = None
     ipv1: Optional[float] = None
     ipv2: Optional[float] = None
+    ipv3: Optional[float] = None
 
 class MetricCreate(MetricBase):
     timestamp: datetime

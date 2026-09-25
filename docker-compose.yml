@@ -1,44 +1,52 @@
 services:
   db:
-    image: timescale/timescaledb:latest-pg16
-    container_name: solaris_db
+    # Keep PostgreSQL 16 for compatibility with existing Timescale volumes.
+    image: timescale/timescaledb:2.30.1-pg16
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-solaris}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-solaris_pass}
-      - POSTGRES_DB=${POSTGRES_DB:-solaris}
+      POSTGRES_USER: ${POSTGRES_USER:-solaris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-solaris}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-solaris} -d ${POSTGRES_DB:-solaris}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
   backend:
-    image: ghcr.io/bencegyurus/solaris-backend:latest
-    container_name: solaris_backend
-    ports:
-      - "8000:8000"
+    build: ./backend
+    image: solaris-backend:local
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://solaris:solaris_pass@db:5432/solaris}
-      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_me}
-      - INVERTER_IP=${INVERTER_IP}
-      - INVERTER_SERIAL=${INVERTER_SERIAL}
-      - INVERTER_PORT=${INVERTER_PORT}
-      - INVERTER_NAME=${INVERTER_NAME}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-solaris}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-solaris}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?Set INTERNAL_API_SECRET in .env}
+      INVERTER_NAME: ${INVERTER_NAME:-My inverter}
+      INVERTER_SERIAL: ${INVERTER_SERIAL:-}
+      INVERTER_IP: ${INVERTER_IP:-}
+      INVERTER_PORT: ${INVERTER_PORT:-8484}
+      INVERTER_TIMEZONE: ${INVERTER_TIMEZONE:-Europe/Budapest}
+      POLLING_INTERVAL_SECONDS: ${POLLING_INTERVAL_SECONDS:-30}
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/bencegyurus/solaris-frontend:latest
-    container_name: solaris_frontend
+    build: ./frontend
+    image: solaris-frontend:local
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      DATABASE_URL: postgres://${POSTGRES_USER:-solaris}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-solaris}
+      BACKEND_URL: http://backend:8000
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      OIDC_NAME: ${OIDC_NAME:-}
+      OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
     depends_on:
       - backend
     restart: unless-stopped

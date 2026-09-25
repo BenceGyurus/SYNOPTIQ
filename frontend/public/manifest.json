@@ -1,21 +1,17 @@
 {
-  "name": "Synoptiq Monitor",
-  "short_name": "Nexus",
-  "description": "Napelem rendszer távfelügyelet",
+  "name": "Solaris — Solplanet monitoring",
+  "short_name": "Solaris",
+  "description": "Local Solplanet inverter monitoring",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#020617",
+  "background_color": "#f6f7f4",
+  "theme_color": "#17312e",
   "icons": [
     {
-      "src": "/globe.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/globe.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
+      "src": "/solaris.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
