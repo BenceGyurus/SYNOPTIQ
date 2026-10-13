@@ -60,10 +60,10 @@ class Metric(Base):
     pac = Column(Float)  # Active AC Power (W)
     sac = Column(Float)  # Apparent AC Power (VA)
     qac = Column(Float)  # Reactive AC Power (VAR)
-    eto = Column(Float)  # Total Energy Output (Wh)
-    etd = Column(Float)  # Today's Energy Output (Wh)
+    eto = Column(Float)  # Lifetime energy (kWh, already scaled from protocol)
+    etd = Column(Float)  # Today's energy (kWh, already scaled from protocol)
     hto = Column(Float)  # Hours of operation (total)
-    pf = Column(Float)  # Power Factor (e.g., 98)
+    pf = Column(Float)  # Reported power factor as a ratio (e.g., 0.98)
     wan = Column(Integer)
     err = Column(Integer)
 

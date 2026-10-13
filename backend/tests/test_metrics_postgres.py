@@ -17,6 +17,7 @@ from app.api.v1.endpoints.metrics import read_insights, read_timeseries
 from app.core.config import settings
 from app.db.base import Base
 from app.models.sql import Inverter, Metric
+from app.services.prometheus_exporter import read_snapshot
 
 
 @unittest.skipUnless(os.getenv("TEST_DATABASE_URL"), "Set TEST_DATABASE_URL for PostgreSQL integration")
@@ -65,3 +66,19 @@ class MetricsPostgresTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(series)
             self.assertTrue(all(point["timestamp"] >= midnight for point in series))
             self.assertTrue(all(point["value"] >= 3000 for point in series))
+
+    async def test_exporter_reads_only_latest_sample_per_inverter_including_empty_devices(self):
+        now = datetime.now(ZoneInfo(settings.INVERTER_TIMEZONE))
+        async with AsyncSession(self.engine) as db:
+            db.add_all([Inverter(id=index, name=f"Test {index}", serial_number=f"EXPORT-{index}",
+                                ip_address="192.168.1.15") for index in (1, 2, 3)])
+            await db.flush()
+            db.add_all([
+                Metric(inverter_id=1, timestamp=now - timedelta(hours=1), pac=100),
+                Metric(inverter_id=1, timestamp=now, pac=950),
+                Metric(inverter_id=2, timestamp=now, pac=2000),
+            ])
+            await db.commit()
+            rows = await read_snapshot(db)
+            self.assertEqual([(inverter.id, reading.pac if reading else None)
+                              for inverter, reading in rows], [(1, 950), (2, 2000), (3, None)])

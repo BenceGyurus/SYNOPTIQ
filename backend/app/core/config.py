@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional, Union
-from pydantic import EmailStr
+from pydantic import EmailStr, Field, SecretStr
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SOLARIS NEXUS"
@@ -8,6 +8,9 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = ""
     INTERNAL_API_SECRET: str = ""
+    # An empty token disables Prometheus exposition. Use a dedicated random token.
+    PROMETHEUS_TOKEN: SecretStr = SecretStr("")
+    PROMETHEUS_MAX_AGE_SECONDS: int = Field(default=180, ge=1, le=86400)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

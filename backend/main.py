@@ -7,6 +7,7 @@ import asyncio
 import logging
 
 from app.api.v1.api import api_router
+from app.api.prometheus import router as prometheus_router
 from app.core.config import settings
 from app.services.inverter_data_collector import collect_inverter_data
 from app import crud
@@ -48,6 +49,7 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(prometheus_router)
 
 @app.on_event("startup")
 async def startup_event():

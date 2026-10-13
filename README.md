@@ -14,6 +14,7 @@ Open source, local-first monitoring for Solplanet / AISWEI inverters. A clear da
 - Energy insights: 14/30-day daily production, monthly/yearly observed totals, best day, daily average, measured peak, first/last generation, and CSV export. Missing days stay blank; today's incomplete day is highlighted separately.
 - A fair yesterday comparison uses equally timed daily counters, when both days have a nearby sample. PV input power, a guarded AC/DC ratio, phase voltage spread, and daily maximum inverter temperature provide more technical context.
 - Optional solar weather: sunrise/sunset, a solar-day clock, cloud cover, temperature, wind, 24-hour radiation chart, a three-day solar outlook, and the strongest upcoming three-hour radiation window.
+- Optional Bearer-protected Prometheus exporter and ready-to-import Hungarian/English Grafana dashboards. See [monitoring setup](monitoring/README.md).
 
 ## Quick start / Gyors kezdés
 
