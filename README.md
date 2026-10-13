@@ -33,6 +33,8 @@ secret stable because existing sessions and encrypted OIDC settings depend on it
 If `curl http://localhost:3000/api/setup` returns an unrelated 401 response,
 check the frontend's published host port or your reverse proxy route; the app's
 setup endpoint returns JSON with `required` and `oidcAvailable` when healthy.
+During first-run setup, `/api/auth/get-session` returns 403 until the admin
+account exists; the UI uses `/api/setup` to decide when to show the setup form.
 
 **Magyar telepítés:** Másold az `.env.example` fájlt `.env` néven, állíts be három különböző véletlen titkot, majd indítsd a `docker compose up -d --build` paranccsal. Nyisd meg a `http://localhost:3000` címet, hozd létre az admin fiókot, és add meg az inverter sorozatszámát. A **Keresés** funkcióhoz például `192.168.1.0/24` alhálózatot adj meg. A konténernek ugyanarról a hálózatról kell látnia a dongle-t.
 

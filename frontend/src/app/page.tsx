@@ -320,16 +320,17 @@ export function SolarisApp({
   const canManageDevices = admin || pref?.user.role === "operator";
 
   useEffect(() => {
-    Promise.all([
-      api<{ required: boolean; oidcAvailable: boolean }>("/api/setup"),
-      fetch("/api/auth/get-session").then((response) => {
-        if (!response.ok) throw new Error("Session check failed");
-        return response.json();
-      }),
-    ])
-      .then(([state, auth]) => {
+    api<{ required: boolean; oidcAvailable: boolean }>("/api/setup")
+      .then(async (state) => {
         setSetup(state.required);
         setOidcAvailable(state.oidcAvailable);
+        if (state.required) {
+          setSession(false);
+          return;
+        }
+        const response = await fetch("/api/auth/get-session");
+        if (!response.ok) throw new Error("Session check failed");
+        const auth = await response.json();
         setSession(Boolean(auth?.user));
       })
       .catch(() => setStartupError(true));
