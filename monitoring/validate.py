@@ -7,9 +7,10 @@ import os
 import re
 import sys
 import time
+from http.client import HTTPException
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.error import HTTPError, URLError
+from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from generate_dashboards import ROOT, dashboard
@@ -81,7 +82,7 @@ def grafana_import(base):
         try:
             api("/api/health")
             break
-        except (URLError, HTTPError):
+        except (URLError, OSError, HTTPException):
             if time.monotonic() >= deadline:
                 raise RuntimeError("Grafana did not become ready")
             time.sleep(1)

@@ -92,6 +92,9 @@ jobs:
             --env GF_ANALYTICS_REPORTING_ENABLED=false --env GF_ANALYTICS_CHECK_FOR_UPDATES=false \
             --env GF_PLUGINS_PREINSTALL_DISABLED=true grafana/grafana:13.2.4
           python monitoring/validate.py --grafana http://127.0.0.1:3100
+      - name: Grafana diagnostics on failure
+        if: failure()
+        run: docker logs --tail 100 solaris-grafana-ci || true
       - name: Remove test Grafana container
         if: always()
         run: docker rm --force solaris-grafana-ci || true
