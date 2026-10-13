@@ -27,7 +27,11 @@ jobs:
         working-directory: frontend
       - run: npm run format:check
         working-directory: frontend
-      - run: npm audit --audit-level=high
+      # Production dependencies gate releases; also block critical build-tool findings.
+      # The currently unpatched braces advisory is confined to ESLint's glob tools.
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+      - run: npm audit --audit-level=critical
         working-directory: frontend
       - run: npm run build
         working-directory: frontend

@@ -24,6 +24,16 @@ docker compose up -d --build
 Open `BETTER_AUTH_URL` (default [http://localhost:3000](http://localhost:3000)). On first visit, enter the admin name, email, and a password of at least 12 characters. Add an inverter in **Devices / Eszközök** using the serial number printed on the inverter. For example, a local endpoint such as `http://192.168.1.15:8484/getdevdata.cgi?device=2&sn=<SERIAL>` becomes IP `192.168.1.15`, port `8484`, serial `<SERIAL>` in the form.
 For access beyond localhost, set `BETTER_AUTH_URL` to the exact public origin and serve the frontend over HTTPS through a reverse proxy. Keep the PostgreSQL and backend services on a private network.
 
+If the first-run page does not appear, check the frontend container logs. A
+missing `BETTER_AUTH_SECRET` prevents Better Auth from starting; a missing
+`BETTER_AUTH_URL` can break sign-in redirects. Both variables must be available
+inside the **frontend container**, not just in a host shell. After adding them
+to the frontend service configuration, recreate that service. Keep the generated
+secret stable because existing sessions and encrypted OIDC settings depend on it.
+If `curl http://localhost:3000/api/setup` returns an unrelated 401 response,
+check the frontend's published host port or your reverse proxy route; the app's
+setup endpoint returns JSON with `required` and `oidcAvailable` when healthy.
+
 **Magyar telepítés:** Másold az `.env.example` fájlt `.env` néven, állíts be három különböző véletlen titkot, majd indítsd a `docker compose up -d --build` paranccsal. Nyisd meg a `http://localhost:3000` címet, hozd létre az admin fiókot, és add meg az inverter sorozatszámát. A **Keresés** funkcióhoz például `192.168.1.0/24` alhálózatot adj meg. A konténernek ugyanarról a hálózatról kell látnia a dongle-t.
 
 `INVERTER_IP`, `INVERTER_SERIAL`, `INVERTER_PORT`, and `INVERTER_NAME` can preconfigure one device via environment variables. These values take precedence for that device at startup. Do not publish port 8000; the backend accepts requests only from the frontend using `INTERNAL_API_SECRET`.

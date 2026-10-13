@@ -268,6 +268,8 @@ export function SolarisApp({
   initialPanel?: "none" | "history";
 }) {
   const [setup, setSetup] = useState<boolean | null>(null);
+  const [startupError, setStartupError] = useState(false);
+  const [startupRetry, setStartupRetry] = useState(0);
   const [oidcAvailable, setOidcAvailable] = useState(false);
   const [session, setSession] = useState<boolean | null>(null);
   const [pref, setPref] = useState<Preferences | null>(null);
@@ -320,18 +322,18 @@ export function SolarisApp({
   useEffect(() => {
     Promise.all([
       api<{ required: boolean; oidcAvailable: boolean }>("/api/setup"),
-      fetch("/api/auth/get-session").then((r) => r.json()),
+      fetch("/api/auth/get-session").then((response) => {
+        if (!response.ok) throw new Error("Session check failed");
+        return response.json();
+      }),
     ])
       .then(([state, auth]) => {
         setSetup(state.required);
         setOidcAvailable(state.oidcAvailable);
         setSession(Boolean(auth?.user));
       })
-      .catch(() => {
-        setSetup(false);
-        setSession(false);
-      });
-  }, []);
+      .catch(() => setStartupError(true));
+  }, [startupRetry]);
 
   const load = useCallback(async () => {
     try {
@@ -596,6 +598,26 @@ export function SolarisApp({
     }
   }
 
+  if (startupError)
+    return (
+      <div className="center-state" role="alert">
+        <Sun size={36} />
+        <span>
+          {lang === "hu"
+            ? "Nem sikerült ellenőrizni az első beállítást. Ellenőrizd a frontend beállításait és az adatbázis-kapcsolatot."
+            : "Could not check initial setup. Check the frontend settings and database connection."}
+        </span>
+        <button
+          className="button primary"
+          onClick={() => {
+            setStartupError(false);
+            setStartupRetry((previous) => previous + 1);
+          }}
+        >
+          {t.refresh}
+        </button>
+      </div>
+    );
   if (setup === null || session === null)
     return (
       <div className="center-state">
