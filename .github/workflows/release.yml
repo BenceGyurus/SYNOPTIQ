@@ -31,6 +31,8 @@ jobs:
         working-directory: frontend
       - run: npm run format:check
         working-directory: frontend
+      - run: npm test
+        working-directory: frontend
       # Production dependencies gate releases; also block critical build-tool findings.
       # The currently unpatched braces advisory is confined to ESLint's glob tools.
       - run: npm audit --omit=dev --audit-level=high
@@ -45,6 +47,20 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: solaris_test
+          POSTGRES_PASSWORD: ci-only-database-password
+          POSTGRES_DB: solaris_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U solaris_test -d solaris_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://solaris_test:ci-only-database-password@localhost:5432/solaris_test
     steps:
       - uses: actions/checkout@v4
         with:

@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const { oidc } = await getAuth();
   const row = (
     await pool.query(
-      "SELECT default_language, discovery_subnet FROM app_config WHERE id = 1",
+      "SELECT default_language, discovery_subnet, site_name, latitude, longitude FROM app_config WHERE id = 1",
     )
   ).rows[0];
   return Response.json({

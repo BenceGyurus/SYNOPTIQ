@@ -27,6 +27,9 @@ export function ensureAppSchema() {
       oidc_client_secret text
     );
     INSERT INTO app_config (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+    ALTER TABLE app_config ADD COLUMN IF NOT EXISTS site_name text NOT NULL DEFAULT '';
+    ALTER TABLE app_config ADD COLUMN IF NOT EXISTS latitude double precision;
+    ALTER TABLE app_config ADD COLUMN IF NOT EXISTS longitude double precision;
   `,
     )
     .then(() => undefined)

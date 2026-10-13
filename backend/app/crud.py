@@ -172,7 +172,7 @@ async def get_metrics(
 
 async def get_latest_metric(db: AsyncSession, inverter_id: int) -> Optional[Metric]:
     result = await db.execute(
-        select(Metric).filter(Metric.inverter_id == inverter_id).order_by(Metric.timestamp.desc())
+        select(Metric).filter(Metric.inverter_id == inverter_id).order_by(Metric.timestamp.desc()).limit(1)
     )
     return result.scalars().first()
 

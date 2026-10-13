@@ -11,6 +11,9 @@ Open source, local-first monitoring for Solplanet / AISWEI inverters. A clear da
 - Better Auth email/password sessions and optional OpenID Connect. Admin and viewer roles are checked on the server.
 - Admin-only LAN discovery through `getdev.cgi?device=2`, limited to a private IPv4 range of at most 256 addresses. Manual IP/serial entry remains available.
 - Responsive flat-color interface without gradients. No cloud service is needed for telemetry.
+- Energy insights: 14/30-day daily production, monthly/yearly observed totals, best day, daily average, measured peak, first/last generation, and CSV export. Missing days stay blank; today's incomplete day is highlighted separately.
+- A fair yesterday comparison uses equally timed daily counters, when both days have a nearby sample. PV input power, a guarded AC/DC ratio, phase voltage spread, and daily maximum inverter temperature provide more technical context.
+- Optional solar weather: sunrise/sunset, a solar-day clock, cloud cover, temperature, wind, 24-hour radiation chart, a three-day solar outlook, and the strongest upcoming three-hour radiation window.
 
 ## Quick start / Gyors kezdés
 
@@ -40,6 +43,16 @@ account exists; the UI uses `/api/setup` to decide when to show the setup form.
 
 `INVERTER_IP`, `INVERTER_SERIAL`, `INVERTER_PORT`, and `INVERTER_NAME` can preconfigure one device via environment variables. These values take precedence for that device at startup. Do not publish port 8000; the backend accepts requests only from the frontend using `INTERNAL_API_SECRET`.
 Set `INVERTER_TIMEZONE` to the inverter's local IANA timezone (default `Europe/Budapest`); polling defaults to every 30 seconds.
+
+### Solar weather / Napjárás és időjárás
+
+In **Settings → System location / Beállítások → A rendszer helyszíne**, search for a town or enter its WGS84 latitude and longitude, then save. Only admins can change the shared location; all signed-in users can view the forecast. Clear both coordinates and save to disable weather. New settings are added automatically to the existing database; no new environment variables or API keys are required.
+
+Forecasts and city search use [Open-Meteo](https://open-meteo.com/en/docs) and [GeoNames via Open-Meteo](https://open-meteo.com/en/docs/geocoding-api). The keyless service permits personal/non-commercial use under its [terms](https://open-meteo.com/en/terms). The app attributes weather data under CC BY 4.0 and caches forecast requests for 30 minutes. Only coordinates are sent for forecasts, and town search text for geocoding; inverter identifiers and readings stay local. Internet access is optional: weather failure does not interrupt local telemetry.
+
+Solar radiation is a modelled hourly mean for a horizontal surface, in W/m²; daily irradiation is converted from MJ/m² to kWh/m². It is not a forecast of the inverter's electricity output. The three-hour window uses consecutive future hourly intervals, including their preceding-hour averaging convention. Panel orientation, capacity, shading and losses are not inferred.
+
+Energy summaries use observed daily `etd` maxima in `INVERTER_TIMEZONE`. Monthly/yearly totals include only days with stored readings, and the 30-day average and record exclude the unfinished current day. The first and last generation times are observed samples above 10 W. The calculated AC/DC ratio is shown only at DC input ≥100 W, with positive AC output no greater than calculated DC power; inconsistent input readings produce no ratio.
 
 ### OpenID Connect
 
@@ -85,10 +98,12 @@ Existing PostgreSQL metrics from the previous release are adjusted once at start
 ## Development and release
 
 ```sh
-cd frontend && npm ci && npm run lint && npm run format:check && npm run build
+cd frontend && npm ci && npm test && npm run lint && npm run format:check && npm run build
 python -m pip install -r backend/requirements.lock
 python -m unittest discover -s backend/tests -v
 ```
+
+The PostgreSQL integration test runs in CI against PostgreSQL 16. To run it locally, set `TEST_DATABASE_URL` to a PostgreSQL SQLAlchemy async URL (`postgresql+asyncpg://…`). It creates and removes a uniquely named test schema. Without that variable, the database integration test is skipped and the pure calculation/protocol tests still run.
 
 GitHub Actions runs lint, production build, dependency audit, Python compilation and protocol tests for pull requests and `main`. Only successful `main` runs publish backend and frontend images to GHCR with immutable commit-SHA tags plus `latest`. For production, set `BACKEND_IMAGE` and `FRONTEND_IMAGE` to matching `sha-<commit>` tags, then run `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull` and `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`. The release pipeline publishes images; deployment is an explicit operator step.
 

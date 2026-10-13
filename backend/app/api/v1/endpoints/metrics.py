@@ -1,5 +1,5 @@
 from typing import List, Annotated, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from app.core.config import settings
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -9,6 +9,7 @@ from app import crud
 from app.dependencies import get_db
 from app.schemas import metric as metric_schema
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.energy_insights import summarize_days
 
 router = APIRouter(
     prefix="/metrics",
@@ -16,19 +17,70 @@ router = APIRouter(
     redirect_slashes=False,
 )
 
+
+@router.get("/insights")
+async def read_insights(
+    inverter_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    zone = ZoneInfo(settings.INVERTER_TIMEZONE)
+    now = datetime.now(zone)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start = min(midnight.replace(month=1, day=1), midnight - timedelta(days=29))
+    result = await db.execute(text("""
+        SELECT (timestamp AT TIME ZONE :zone)::date AS date,
+               max(etd) AS energy, max(pac) AS peak, count(*) AS samples,
+               min(timestamp) FILTER (WHERE pac > 10) AS first_generation,
+               max(timestamp) FILTER (WHERE pac > 10) AS last_generation,
+               max(tmp) AS temperature_max
+        FROM metrics
+        WHERE inverter_id = :inverter_id AND timestamp >= :start AND timestamp <= :now
+        GROUP BY 1 ORDER BY 1
+    """), {"zone": settings.INVERTER_TIMEZONE, "inverter_id": inverter_id,
+            "start": start, "now": now})
+    summary = summarize_days([dict(row) for row in result.mappings()], now)
+    peak = await db.execute(text("""
+        SELECT timestamp FROM metrics
+        WHERE inverter_id = :inverter_id AND timestamp >= :midnight
+          AND timestamp <= :now AND pac IS NOT NULL
+        ORDER BY pac DESC, timestamp ASC LIMIT 1
+    """), {"inverter_id": inverter_id, "midnight": midnight, "now": now})
+    summary["peak_at"] = peak.scalar()
+    # Compare equally timed counters only when both days have a recent sample.
+    latest = await crud.get_latest_metric(db, inverter_id=inverter_id)
+    comparison = None
+    if latest and latest.etd is not None and latest.timestamp.astimezone(zone).date() == now.date():
+        cutoff = latest.timestamp.astimezone(zone) - timedelta(days=1)
+        previous = await db.execute(text("""
+            SELECT timestamp, etd FROM metrics
+            WHERE inverter_id = :inverter_id AND timestamp >= :yesterday
+              AND timestamp <= :cutoff AND etd IS NOT NULL
+            ORDER BY timestamp DESC LIMIT 1
+        """), {"inverter_id": inverter_id, "yesterday": midnight - timedelta(days=1),
+                "cutoff": cutoff})
+        previous = previous.mappings().first()
+        if previous and (cutoff - previous["timestamp"]).total_seconds() <= 1200:
+            comparison = {"today": latest.etd, "yesterday": previous["etd"],
+                          "at": latest.timestamp}
+    summary["comparison"] = comparison
+    return summary
+
 @router.get("/timeseries")
 async def read_timeseries(
     inverter_id: int,
-    start_time: datetime,
-    end_time: datetime,
     db: Annotated[AsyncSession, Depends(get_db)],
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
     bucket_minutes: int = Query(5, ge=1, le=60),
     metric: str = Query("power"),
 ):
-    if start_time.tzinfo is None:
-        start_time = start_time.replace(tzinfo=timezone.utc)
+    end_time = end_time or datetime.now(ZoneInfo(settings.INVERTER_TIMEZONE))
     if end_time.tzinfo is None:
         end_time = end_time.replace(tzinfo=timezone.utc)
+    start_time = start_time or end_time.astimezone(ZoneInfo(settings.INVERTER_TIMEZONE)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=timezone.utc)
     if end_time <= start_time or (end_time - start_time).days > 90:
         raise HTTPException(status_code=422, detail="Invalid time range")
     column = {"power": "pac", "voltage": "vac1", "frequency": "fac", "temperature": "tmp"}.get(metric)
